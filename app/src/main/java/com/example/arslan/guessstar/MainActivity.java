@@ -1,14 +1,19 @@
 package com.example.arslan.guessstar;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+
+import com.bumptech.glide.Glide;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -47,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         ImageDownloader imageDownloader = new ImageDownloader();
         try {
             String pageCode = codeDownloader.execute("http://www.posh24.se/kandisar").get();
-            allImages = new ArrayList<>(imageDownloader.execute(pageCode).get());
+//            allImages = new ArrayList<>(imageDownloader.execute(pageCode).get());
             Log.i(TAG, allImages.toString());
         } catch (ExecutionException e) {
             e.printStackTrace();
@@ -55,15 +60,17 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        Glide.with(this).load("sdad").into(imageViewStar);
 
     }
+
 
     public void click(View view) {
         imageViewStar.setImageBitmap(allImages.get(0));
     }
 
 
-    private static class CodeDownloader extends AsyncTask<String, Void, String>{
+    private class CodeDownloader extends AsyncTask<String, Void, String> {
 
         @Override
         protected String doInBackground(String... strings) {
@@ -77,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
                 String line = "";
-                while((line = bufferedReader.readLine()) != null){
+                while ((line = bufferedReader.readLine()) != null) {
                     pageCode.append(line);
                 }
             } catch (MalformedURLException e) {
@@ -85,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
             } finally {
-                if(urlConnection == null){
+                if (urlConnection == null) {
                     urlConnection.disconnect();
                 }
 
@@ -96,47 +103,35 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private static class ImageDownloader extends AsyncTask<String, Integer, ArrayList<Bitmap>>{
+    private class ImageDownloader extends AsyncTask<String, Integer, ArrayList<String>> {
 
         @Override
-        protected ArrayList<Bitmap> doInBackground(String... strings) {
-
-            ArrayList<Bitmap> allBitmaps = new ArrayList<>();
-
-
+        protected ArrayList<String> doInBackground(String... strings) {
+            ArrayList<String> allUrls = new ArrayList<>();
             Pattern patternImg = Pattern.compile("<img src=\"(.*?)\"");
             Matcher matcherImg = patternImg.matcher(strings[0]);
-            URL url = null;
-            HttpURLConnection urlConnection = null;
 
-            while(matcherImg.find()){
-                try {
-                    String downloadAddress = matcherImg.group(1);
-                    Log.i(TAG, downloadAddress);
-                    url = new URL(downloadAddress);
-                    urlConnection = (HttpURLConnection) url.openConnection();
-                    InputStream inputStream = urlConnection.getInputStream();
-
-                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                    allBitmaps.add(bitmap);
-
-                } catch (MalformedURLException e) {
-                    Log.e(TAG, "Ошибка в подключении(URL) во время скачивания");
-                } catch (IOException e) {
-                    Log.e(TAG, "Ошибка в подключении(CONNECTION) во время скачивания");
-                    e.printStackTrace();
-                }
+            while (matcherImg.find()) {
+                String downloadAddress = matcherImg.group(1);
+                allUrls.add(downloadAddress);
             }
 
-            return allBitmaps;
+            return allUrls;
         }
     }
 
-    private static class NameDownloader extends AsyncTask<String, Integer, String>{
+    private class NameDownloader extends AsyncTask<String, Integer, ArrayList<String>> {
 
         @Override
-        protected String doInBackground(String... strings) {
-            return null;
+        protected ArrayList<String> doInBackground(String... strings) {
+            ArrayList<String> allNames = new ArrayList<>();
+            Pattern patternName = Pattern.compile("alt=\"(.*?)\"");
+            Matcher matcherName = patternName.matcher(strings[0]);
+            while (matcherName.find()) {
+                String downloadAddress = matcherName.group(1);
+                allNames.add(downloadAddress);
+            }
+            return allNames;
         }
     }
 }
